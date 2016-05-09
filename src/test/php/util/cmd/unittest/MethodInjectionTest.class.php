@@ -9,6 +9,7 @@ use util\log\Logger;
 use util\log\LogCategory;
 use util\Properties;
 use util\PropertyManager;
+use util\PropertySource;
 use xp\command\CmdRunner;
 use rdbms\ConnectionManager;
 use rdbms\DBConnection;
@@ -28,11 +29,11 @@ class MethodInjectionTest extends TestCase {
     );
   }
 
-  private function run($command) {
+  private function run($command, $config= null) {
     $stream= new MemoryOutputStream();
     $runner= new CmdRunner();
     $runner->setOut($stream);
-    $runner->run(new ParamString([$command->getName()]), new Config());
+    $runner->run(new ParamString([$command->getName()]), $config ?: new Config());
     return $stream;
   }
 
@@ -64,11 +65,12 @@ class MethodInjectionTest extends TestCase {
     $conn= newinstance(DBConnection::class, [new DSN('test://db')], [
       'selectdb' => function($db) { },
       'identity' => function($field= null) { },
-      'begin' => function($transaction) { },
-      'rollback'  => function($transaction) { },
-      'commit' => function($transaction) { },
-      'close' => function() { },
+      'begin'    => function($transaction) { },
+      'rollback' => function($transaction) { },
+      'commit'   => function($transaction) { },
+      'close'    => function() { },
     ]);
+
     ConnectionManager::getInstance()->register($conn, 'test');
     $this->assertEquals($conn->getDSN()->getDriver(), $this->run($command)->getBytes());
   }
@@ -81,9 +83,11 @@ class MethodInjectionTest extends TestCase {
       'run' => function() { $this->out->write($this->used->getFilename()); }
     ]);
 
-    $prop= new Properties('test.ini');
-    PropertyManager::getInstance()->register('test', $prop);
-    $this->assertEquals($prop->getFilename(), $this->run($command)->getBytes());
+    $config= new Config(newinstance(PropertySource::class, [], [
+      'provides' => function($name) { return 'test' === $name; },
+      'fetch' => function($name) { return new Properties('test.ini'); }
+    ]));
+    $this->assertEquals($config->properties('test')->getFilename(), $this->run($command, $config)->getBytes());
   }
 
   #[@test, @expect(TargetInvocationException::class)]

@@ -20,13 +20,16 @@ trait MethodInjection {
    * - util.Properties
    * - rdbms.DBConnection
    *
+   * @param  util.cmd.Config $config
    * @return self
    */
-  public static function newInstance() {
+  public static function newInstance($config) {
     $instance= new self();
 
-    $log= Logger::getInstance();
     $prop= PropertyManager::getInstance();
+    $prop->setSources($config->sources());
+
+    $log= Logger::getInstance();
     $conn= ConnectionManager::getInstance();
 
     foreach (typeof($instance)->getMethods() as $method) {
