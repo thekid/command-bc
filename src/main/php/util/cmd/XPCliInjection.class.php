@@ -5,6 +5,11 @@ use util\PropertyManager;
 use rdbms\ConnectionManager;
 use lang\IllegalArgumentException;
 
+/**
+ * Backwards compatibility for xp-framework/command 8.0+
+ *
+ * @test  xp://util.cmd.unittest.XPCliInjectionTest
+ */
 trait XPCliInjection {
 
   /**
@@ -28,18 +33,23 @@ trait XPCliInjection {
       if ($method->hasAnnotation('inject')) {
         $annotation= $method->getAnnotation('inject');
         $param= $method->getParameter(0);
+
         $name= isset($annotation['name']) ? $annotation['name'] : $param->getName();
         $type= isset($annotation['type']) ? $annotation['type'] : $param->getType()->getName();
+
         switch ($type) {
           case 'util.log.LogCategory':
             $args= [$log->getCategory($name)];
             break;
+
           case 'util.Properties':
             $args= [$prop->getProperties($name)];
             break;
+
           case 'rdbms.DBConnection':
             $args= [$conn->getByHost($name, 0)];
             break;
+
           default:
             throw new IllegalArgumentException('Unknown injection type '.$type);
         }
