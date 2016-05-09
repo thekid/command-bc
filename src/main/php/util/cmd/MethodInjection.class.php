@@ -4,6 +4,8 @@ use lang\System;
 use util\log\Logger;
 use util\log\context\EnvironmentAware;
 use util\PropertyManager;
+use util\Properties;
+use util\PropertyAccess;
 use rdbms\ConnectionManager;
 use lang\IllegalArgumentException;
 
@@ -61,7 +63,17 @@ trait MethodInjection {
             break;
 
           case 'util.Properties':
-            $args= [$prop->getProperties($name)];
+            $p= $prop->getProperties($name);
+            if ($p instanceof PropertyAccess && !$p instanceof Properties) {
+              $convert= Properties::fromString('');
+              if ($section= $p->getFirstSection()) do {
+                $convert->_data[$section]= $p->readSection($section);
+              } while ($section= $p->getNextSection());
+
+              $args= [$convert];
+            } else {
+              $args= [$p];
+            }
             break;
 
           case 'rdbms.DBConnection':

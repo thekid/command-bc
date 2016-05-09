@@ -11,6 +11,7 @@ use util\log\LogCategory;
 use util\log\Context;
 use util\log\context\EnvironmentAware;
 use util\Properties;
+use util\PropertyAccess;
 use util\PropertyManager;
 use util\RegisteredPropertySource;
 use xp\command\CmdRunner;
@@ -108,6 +109,31 @@ class MethodInjectionTest extends TestCase {
     $prop= new Properties('test.ini');
     $config= new Config(new RegisteredPropertySource('test', $prop));
     $this->assertEquals($prop->getFilename(), $this->run($command, $config)->getBytes());
+  }
+
+  #[@test]
+  public function inject_property_access_instance() {
+    $command= $this->newCommand([
+      'used' => null,
+      '#[@inject(name= "test")] withConfig' => function(Properties $prop) { $this->used= $prop; },
+      'run' => function() { $this->out->write($this->used->readSection('section')['test']); }
+    ]);
+
+    $prop= newinstance(PropertyAccess::class, [], [
+      'readString'      => function($section, $key, $default= null) { },
+      'readInteger'     => function($section, $key, $default= null) { },
+      'readFloat'       => function($section, $key, $default= null) { },
+      'readRange'       => function($section, $key, $default= null) { },
+      'readBool'        => function($section, $key, $default= null) { },
+      'readArray'       => function($section, $key, $default= null) { },
+      'readMap'         => function($section, $key, $default= null) { },
+      'hasSection'      => function($section) { },
+      'readSection'     => function($section, $default= []) { return ['test' => 'Works']; },
+      'getFirstSection' => function() { return 'section'; },
+      'getNextSection'  => function() { return false; },
+    ]);
+    $config= new Config(new RegisteredPropertySource('test', $prop));
+    $this->assertEquals('Works', $this->run($command, $config)->getBytes());
   }
 
   #[@test, @expect(TargetInvocationException::class)]
