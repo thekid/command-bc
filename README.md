@@ -7,7 +7,7 @@ Add dependency:
 $ composer require thekid/command-bc
 ```
 
-Use the XPCLI injection trait:
+Use the trait supplied in this package:
 
 
 ```php
@@ -22,3 +22,5 @@ class Test extends \util\cmd\Command {
   }
 }
 ```
+
+**Done!**
