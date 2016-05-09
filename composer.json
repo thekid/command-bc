@@ -1,0 +1,20 @@
+{
+  "name" : "thekid/command-bc",
+  "type" : "library",
+  "homepage" : "http://xp-framework.net/",
+  "license" : "BSD-3-Clause",
+  "description" : "Backwards compatibility for xp-framework/command 8.0+",
+  "keywords": ["module", "xp"],
+  "require" : {
+    "xp-framework/core": "^7.0 | ^6.10",
+    "xp-framework/logging": "^7.0 | ^6.5",
+    "xp-framework/rdbms": "^7.0 | ^6.5",
+    "php" : ">=5.5.0"
+  },
+  "require-dev" : {
+    "xp-framework/unittest": "^7.0 | ^6.9"
+  },
+  "autoload" : {
+    "files" : ["src/main/php/autoload.php"]
+  }
+}
