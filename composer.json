@@ -14,6 +14,9 @@
   "require-dev" : {
     "xp-framework/unittest": "^7.0 | ^6.9"
   },
+  "conflict" : {
+    "xp-framework/command" : "<8.0"
+  },
   "autoload" : {
     "files" : ["src/main/php/autoload.php"]
   }
