@@ -138,13 +138,13 @@ class MethodInjectionTest extends TestCase {
     $command= $this->newCommand([
       'used' => null,
       '#[@inject(name= "test")] useConn' => function(DBConnection $conn) { $this->used= $conn; },
-      'run' => function() { $this->out->write($this->used->getDSN()->getDriver()); }
+      'run' => function() { $this->out->write($this->used->getDSN()->getHost()); }
     ]);
 
     $config= new Config(new RegisteredPropertySource('database', Properties::fromString('
       [test]
-      dsn="test://db"
+      dsn="test://from-config"
     ')));
-    $this->assertEquals('test', $this->run($command, $config)->getBytes());
+    $this->assertEquals('from-config', $this->run($command, $config)->getBytes());
   }
 }
