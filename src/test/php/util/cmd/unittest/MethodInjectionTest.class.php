@@ -1,5 +1,6 @@
 <?php namespace util\cmd\unittest;
 
+use lang\Object;
 use lang\ClassLoader;
 use util\cmd\Command;
 use util\cmd\ParamString;
@@ -7,6 +8,8 @@ use util\cmd\Config;
 use util\cmd\MethodInjection;
 use util\log\Logger;
 use util\log\LogCategory;
+use util\log\Context;
+use util\log\context\EnvironmentAware;
 use util\Properties;
 use util\PropertyManager;
 use util\RegisteredPropertySource;
@@ -146,5 +149,34 @@ class MethodInjectionTest extends TestCase {
       dsn="test://from-config"
     ')));
     $this->assertEquals('from-config', $this->run($command, $config)->getBytes());
+  }
+
+  #[@test]
+  public function environment_aware_context_set() {
+    $command= $this->newCommand([
+      'used' => null,
+      '#[@inject(name= "test")] useLogger' => function(LogCategory $cat) { $this->used= $cat; },
+      'run' => function() { $this->out->write($this->used->getContext()->format()); }
+    ]);
+
+    $aware= ClassLoader::defineClass(self::class.'LogContext', Object::class, [Context::class, EnvironmentAware::class], [
+      'info' => [],
+      'setHostname' => function($value) { $this->info[0]= '@host'; },
+      'setRunner'   => function($value) { $this->info[1]= '@runner'; },
+      'setInstance' => function($value) { $this->info[2]= '@instance'; },
+      'setResource' => function($value) { $this->info[3]= '@resource'; },
+      'setParams'   => function($value) { $this->info[4]= '@params'; },
+      'format'      => function() { ksort($this->info); return 'test['.implode(', ', $this->info).']'; }
+    ]);
+
+    $config= new Config(new RegisteredPropertySource('log', Properties::fromString('
+      [test]
+      appenders=util.log.ConsoleAppender
+      context='.$aware->getName().'
+    ')));
+    $this->assertEquals(
+      'test[@host, @runner, @instance, @resource, @params]',
+      $this->run($command, $config)->getBytes()
+    );
   }
 }

@@ -1,6 +1,8 @@
 <?php namespace util\cmd;
 
+use lang\System;
 use util\log\Logger;
+use util\log\context\EnvironmentAware;
 use util\PropertyManager;
 use rdbms\ConnectionManager;
 use lang\IllegalArgumentException;
@@ -34,6 +36,16 @@ trait MethodInjection {
 
     $conn= ConnectionManager::getInstance();
     $prop->hasProperties('database') && $conn->configure($prop->getProperties('database'));
+
+    // Setup logger context for all registered log categories
+    foreach (Logger::getInstance()->getCategories() as $category) {
+      if (null === ($context= $category->getContext()) || !($context instanceof EnvironmentAware)) continue;
+      $context->setHostname(System::getProperty('host.name'));
+      $context->setRunner('xp.command.CmdRunner');
+      $context->setInstance(typeof($instance)->getName());
+      $context->setResource(null);
+      $context->setParams(implode(' ', $GLOBALS['argv']));
+    }
 
     foreach (typeof($instance)->getMethods() as $method) {
       if ($method->hasAnnotation('inject')) {
