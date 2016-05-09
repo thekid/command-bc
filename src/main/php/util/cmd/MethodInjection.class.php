@@ -8,9 +8,9 @@ use lang\IllegalArgumentException;
 /**
  * Backwards compatibility for xp-framework/command 8.0+
  *
- * @test  xp://util.cmd.unittest.XPCliInjectionTest
+ * @test  xp://util.cmd.unittest.MethodInjectionTest
  */
-trait XPCliInjection {
+trait MethodInjection {
 
   /**
    * Creates a new instance. Perfoms injection for methods decorated with

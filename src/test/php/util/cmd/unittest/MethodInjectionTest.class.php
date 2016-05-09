@@ -4,7 +4,7 @@ use lang\ClassLoader;
 use util\cmd\Command;
 use util\cmd\ParamString;
 use util\cmd\Config;
-use util\cmd\XPCliInjection;
+use util\cmd\MethodInjection;
 use util\log\Logger;
 use util\log\LogCategory;
 use util\Properties;
@@ -18,12 +18,12 @@ use io\streams\MemoryOutputStream;
 use unittest\TestCase;
 use lang\reflect\TargetInvocationException;
 
-class XPCliInjectionTest extends TestCase {
+class MethodInjectionTest extends TestCase {
 
   private function newCommand($definitions) {
     return ClassLoader::defineType(
       self::class.$this->name,
-       ['kind' => 'class', 'extends' => [Command::class], 'implements' => [], 'use' => [XPCliInjection::class]],
+       ['kind' => 'class', 'extends' => [Command::class], 'implements' => [], 'use' => [MethodInjection::class]],
        $definitions
     );
   }

@@ -14,7 +14,7 @@ Use the XPCLI injection trait:
 <?php namespace com\example\cmd;
 
 class Test extends \util\cmd\Command {
-  use \util\cmd\XPCliInjection;        // <-- Add this line!
+  use \util\cmd\MethodInjection;        // <-- Add this line!
 
   #[@inject(name= 'sources')]
   public function useConfig(Properties $prop) {
