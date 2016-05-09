@@ -64,6 +64,8 @@ trait MethodInjection {
 
           case 'util.Properties':
             $p= $prop->getProperties($name);
+
+            // Convert util.PropertyAccess to Properties instances for type safety's sake
             if ($p instanceof PropertyAccess && !$p instanceof Properties) {
               $convert= Properties::fromString('');
               if ($section= $p->getFirstSection()) do {
