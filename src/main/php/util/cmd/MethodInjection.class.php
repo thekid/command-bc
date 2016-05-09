@@ -30,7 +30,10 @@ trait MethodInjection {
     $prop->setSources($config->sources());
 
     $log= Logger::getInstance();
+    $prop->hasProperties('log') && $log->configure($prop->getProperties('log'));
+
     $conn= ConnectionManager::getInstance();
+    $prop->hasProperties('database') && $conn->configure($prop->getProperties('database'));
 
     foreach (typeof($instance)->getMethods() as $method) {
       if ($method->hasAnnotation('inject')) {

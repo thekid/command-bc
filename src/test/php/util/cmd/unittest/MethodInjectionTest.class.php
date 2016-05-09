@@ -9,18 +9,36 @@ use util\log\Logger;
 use util\log\LogCategory;
 use util\Properties;
 use util\PropertyManager;
-use util\PropertySource;
+use util\RegisteredPropertySource;
 use xp\command\CmdRunner;
 use rdbms\ConnectionManager;
 use rdbms\DBConnection;
 use rdbms\DriverManager;
-use rdbms\DSN;
 use io\streams\MemoryOutputStream;
 use unittest\TestCase;
 use lang\reflect\TargetInvocationException;
 
 class MethodInjectionTest extends TestCase {
 
+  /** @return void */
+  #[@beforeClass]
+  public static function registerTestConnection() {
+    DriverManager::register('test', ClassLoader::defineClass(self::class.'TestConnection', DBConnection::class, [], '{
+      public function selectdb($db) { }
+      public function identity($field= null) { }
+      public function begin($transaction) { }
+      public function rollback($transaction) { }
+      public function commit($transaction) { }
+      public function close() { }
+    }'));
+  }
+
+  /**
+   * Defines a new command type
+   *
+   * @param  [:var] $definition
+   * @return lang.XPClass
+   */
   private function newCommand($definitions) {
     return ClassLoader::defineType(
       self::class.$this->name,
@@ -29,11 +47,20 @@ class MethodInjectionTest extends TestCase {
     );
   }
 
+  /**
+   * Runs a command type
+   *
+   * @param  lang.XPClass $command
+   * @param  util.cmd.Config $config Optional configuration
+   * @return io.OutputStream command's output
+   */
   private function run($command, $config= null) {
     $stream= new MemoryOutputStream();
+
     $runner= new CmdRunner();
     $runner->setOut($stream);
     $runner->run(new ParamString([$command->getName()]), $config ?: new Config());
+
     return $stream;
   }
 
@@ -62,15 +89,7 @@ class MethodInjectionTest extends TestCase {
       'run' => function() { $this->out->write($this->used->getDSN()->getDriver()); }
     ]);
 
-    $conn= newinstance(DBConnection::class, [new DSN('test://db')], [
-      'selectdb' => function($db) { },
-      'identity' => function($field= null) { },
-      'begin'    => function($transaction) { },
-      'rollback' => function($transaction) { },
-      'commit'   => function($transaction) { },
-      'close'    => function() { },
-    ]);
-
+    $conn= DriverManager::getConnection('test://db');
     ConnectionManager::getInstance()->register($conn, 'test');
     $this->assertEquals($conn->getDSN()->getDriver(), $this->run($command)->getBytes());
   }
@@ -83,11 +102,9 @@ class MethodInjectionTest extends TestCase {
       'run' => function() { $this->out->write($this->used->getFilename()); }
     ]);
 
-    $config= new Config(newinstance(PropertySource::class, [], [
-      'provides' => function($name) { return 'test' === $name; },
-      'fetch' => function($name) { return new Properties('test.ini'); }
-    ]));
-    $this->assertEquals($config->properties('test')->getFilename(), $this->run($command, $config)->getBytes());
+    $prop= new Properties('test.ini');
+    $config= new Config(new RegisteredPropertySource('test', $prop));
+    $this->assertEquals($prop->getFilename(), $this->run($command, $config)->getBytes());
   }
 
   #[@test, @expect(TargetInvocationException::class)]
@@ -99,5 +116,35 @@ class MethodInjectionTest extends TestCase {
     ]);
 
     $this->run($command);
+  }
+
+  #[@test]
+  public function logger_configuration_is_read_from_log_properties() {
+    $command= $this->newCommand([
+      'used' => null,
+      '#[@inject(name= "test")] useLogger' => function(LogCategory $cat) { $this->used= $cat; },
+      'run' => function() { $this->out->write($this->used->getFlags()); }
+    ]);
+
+    $config= new Config(new RegisteredPropertySource('log', Properties::fromString('
+      [test]
+      flags=1 ; INFO
+    ')));
+    $this->assertEquals('1', $this->run($command, $config)->getBytes());
+  }
+
+  #[@test]
+  public function connection_configuration_is_read_from_database_properties() {
+    $command= $this->newCommand([
+      'used' => null,
+      '#[@inject(name= "test")] useConn' => function(DBConnection $conn) { $this->used= $conn; },
+      'run' => function() { $this->out->write($this->used->getDSN()->getDriver()); }
+    ]);
+
+    $config= new Config(new RegisteredPropertySource('database', Properties::fromString('
+      [test]
+      dsn="test://db"
+    ')));
+    $this->assertEquals('test', $this->run($command, $config)->getBytes());
   }
 }
