@@ -1,5 +1,5 @@
 Backwards compatibility for xp-framework/command 8.0+
-=====================================================
+-----------------------------------------------------
 
 Add dependency:
 
@@ -13,10 +13,8 @@ Use the XPCLI injection trait:
 ```php
 <?php namespace com\example\cmd;
 
-use util\cmd\XPCliInjection;
-
 class Test extends \util\cmd\Command {
-  use XPCliInjection;
+  use \util\cmd\XPCliInjection;        // <-- Add this line!
 
   #[@inject(name= 'sources')]
   public function useConfig(Properties $prop) {
